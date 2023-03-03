@@ -20,20 +20,23 @@ else:
     from os import execvp
 
 
-def assemble_default_config(path) -> dict:
+def assemble_default_config(path) -> tuple[dict, list[str]]:
 	defaults = {}
+	config_files = []
 	_path = PurePath()
 
 	for part in path.parts:
 		_path = _path.joinpath(part)
 
-		if ".awsconfig" in (p.name for p in Path(_path).iterdir()):
-			if Path(_path.joinpath(".awsconfig")).is_file():
-				awsconfig = configparser.ConfigParser()
-				awsconfig.read(Path(_path.joinpath(".awsconfig")))
-				defaults = {**defaults, **dict(awsconfig.items("default"))}
+		if ".awsdefault" in (p.name for p in Path(_path).iterdir()):
+			if Path(_path.joinpath(".awsdefault")).is_file():
+				awsdefault = configparser.ConfigParser()
+				awsdefault.read(Path(_path.joinpath(".awsdefault")))
+				defaults = {**defaults, **dict(awsdefault.items("default"))}
 
-	return defaults
+				config_files.append(str(Path(_path.joinpath(".awsdefault"))))
+
+	return defaults, config_files
 
 
 def main() -> int:
@@ -42,17 +45,17 @@ def main() -> int:
 
 	if not DISABLE:
 		# default_args, config_file  = get_most_local_config(Path(os.getcwd()))
-		default_args = assemble_default_config(Path(os.getcwd()))
+		default_args, config_files = assemble_default_config(Path(os.getcwd()))
 
 		if DEBUG:
-			print(f"using default args from {config_file!r}", file=sys.stderr)
+			print(f"using default args from files: {', '.join(config_files)}", file=sys.stderr)
 
 		for arg, val in default_args.items():
 			arg = "--"+arg
 			if arg not in cmd:
 				cmd.extend([arg, val])
 				if DEBUG:
-					print(f"adding {arg} {val}", file=sys.stderr)
+					print(f"adding '{arg} {val}'", file=sys.stderr)
 
 	return execvp(cmd[0], cmd)
 

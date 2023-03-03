@@ -1,31 +1,35 @@
 # awsdefault
 
 Automatically add arguments to the aws cli from config files if they were not specified
-All `.awsconfig` files on the path to the current working directory are evaluated, with closer configs overwriting earlier.
+All `.awsdefault` files on the path to the current working directory are evaluated, with closer configs overwriting earlier.
 
-For example, running awsdefault in the directory `first_project`, the options in `.awsconfig (A)` and `.awsconfig (B)` will be added, with `(B)` taking taking precedence.
-~~~ 
-/
-├── .awsconfig (A)
-└── my_projects
-		├── .awsconfig
-		├── first_project
-		│		└── .awsconfig (B)
-		└── second_project
-				└── .awsconfig (C)
-~~~ 
-
-`.awsconfig` must have a section called `default`. From there, keys are interpreted as keyword arguments, adding `--` to the start of them and appending them to the final `aws` command.
-
-Example `.awsconfig` file:
+For example, running awsdefault in the directory `first_project`, the options in `.awsdefault (A)`, `.awsdefault (B)` and `.awsdefault (C)` will be added.
+Running awsdefault in `my_project` will collect the defaults from `.awsdefault (A)` and `.awsdefault (B)`.
 ~~~
-cat .awsconfig
+/
+├── .awsdefault (A)
+└── my_projects
+		├── .awsdefault (B)
+		├── first_project
+		│		└── .awsdefault (C)
+		└── second_project
+				└── .awsdefault (D)
+~~~
+
+`.awsdefault` must have a section called `default`. From there, keys are interpreted as keyword arguments, adding `--` to the start of them and appending them to the final `aws` command.
+
+Example `.awsdefault` file:
+~~~
+cat .awsdefault
 
 [default]
 profile=my-fave-profile
 region=eu-central-1
 cluser=cluster-name
 ~~~
+
+If an argument is literally specified when calling `awsdefault` it will not be replaced by any default.
+If a default argument is specified in two `.awsdefault` files, the value on the deeper path will be used.
 
 ## motivation
 For some project / directory I want to always add `--profile <xyz>` ect. to aws cli.
