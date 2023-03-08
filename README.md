@@ -28,9 +28,14 @@ profile=my-fave-profile
 region=eu-central-1
 cluser=cluster-name
 
-[logs get-log-events]
+# applies to all subcommands of 'log' (including 'describe-log-streams')
+[logs]
 log-group-name=my-log-group
 log-stream-name=random-log-stream-123
+
+# only applies to sub-subcommand
+[logs describe-log-streams]
+order-by=updated_at
 ~~~
 
 ~~~
