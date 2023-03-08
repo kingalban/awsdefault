@@ -2,14 +2,20 @@ from __future__ import annotations
 
 import os
 import sys
-import subprocess
 import configparser
+from itertools import zip_longest
 from pathlib import Path, PurePath
 from typing import Generator
 
 
 DEBUG = os.getenv("AWSDEFAULT_DEBUG")
 DISABLE = os.getenv("AWSDEFAULT_DISABLE")
+
+
+def log(*arg, **kwargs):
+	if DEBUG: 
+		print(*arg, **kwargs, file=sys.stderr)
+
 
 # borrowed from https://github.com/asottile/awshelp
 if sys.platform == 'win32':
@@ -44,20 +50,25 @@ def assemble_default_config(path) -> tuple[dict, list[str]]:
 	return defaults, config_files
 
 
-def main() -> int:
-	cmd = sys.argv
+def belongs_to_heirachy(command, pattern) -> bool:
+	all_match = all(c == p for c, p in zip_longest(command, pattern))
+	pattern_is_parent = all(c == p for c, p in zip(command, pattern))
+	return all_match or pattern_is_parent
+
+
+def create_cmd(argv) -> list[str]:
+	cmd = argv
 	cmd[0] = "aws"
 
 	if not DISABLE:
 		default_args, config_files = assemble_default_config(Path(os.getcwd()))
 
-		if DEBUG:
-			print(f"using default args from files: {', '.join(config_files)}", file=sys.stderr)
+		log(f"using default args from files: {', '.join(config_files)}")
 
 		subcommand = tuple(arg for arg in cmd[1:3] if not arg.startswith("-"))
 
 		for section, arguments in default_args.items():
-			if section == ("default",) or section == subcommand:
+			if section == ("default",) or belongs_to_heirachy(subcommand, section):
 				for key, val in arguments.items():
 					key = f"--{key}"
 					if key not in cmd:
@@ -65,9 +76,13 @@ def main() -> int:
 						if DEBUG:
 							print(f"adding '{key} {val}'", file=sys.stderr)
 
-	if DEBUG:
-		print(f"executing: {' '.join(cmd)}", file=sys.stderr)
+	log(f"executing: {' '.join(cmd)}")
 
+	return cmd
+
+
+def main() -> int:
+	cmd = create_cmd(sys.argv)
 	return execvp(cmd[0], cmd)
 
 
